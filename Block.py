@@ -1,30 +1,27 @@
+import json
 import time
-import hashlib
-# from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-# from cryptography.hazmat.primitives import serialization
-# from cryptography.exceptions import InvalidSignature
+from hashlib import sha256 as H
 
 class Block:
-    def __init__(self, txns, prev):
-        self.txns = txns
-        self.prev = prev
-        self.timestamp = time.time()
-        self.nonce = 0
-        self.hash = self.calculate_hash()
-    
-    def calculate_hash(self):
-        block_data = "".join[(
-            str(tx) for tx in self.txns
-        )] + str(self.timestamp) + str(self.nonce) + str(self.prev)
+    def __init__(self, index, transactions, previous_hash, timestamp=None, ledger_sequence_number=None):
+        self.index = index
+        self.transactions = transactions
+        self.previous_hash = previous_hash
+        self.timestamp = timestamp or int(time.time())
+        self.ledger_seq_number = ledger_sequence_number
 
-        block_hash = hashlib.sha256(block_data.encode('utf-8')).hexdigest()
-
+    def hash(self):
+        block_data = {
+            'index': self.index,
+            'transactions': [transaction.__dict__ for transaction in self.transactions],
+            'previous_hash': self.previous_hash,
+            'timestamp': self.timestamp,
+            'nonce': self.nonce
+        }
+        block_json = json.dumps(block_data, sort_keys=True).encode()
+        block_hash = H(block_json).hexdigest()
         return block_hash
-
-    def mine_block(self, difficulty):
-        while self.hash[:difficulty] != "0" + difficulty:
-            self.nonce += 1
-            self.hash = self.calculate_hash()
     
-    def __repr__(self):
-        return f"Block: {self.hash} (previous: {self.prev})"
+    @classmethod
+    def create_genesis_block(cls):
+        return cls(index = 0, transactions=[], previous_hash="0")

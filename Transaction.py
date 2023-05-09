@@ -1,4 +1,6 @@
-from cryptography.exceptions import InvalidSignature
+import json
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
 
 class Transaction:
     def __init__(self, sender, receiver, amount, signature=None):
@@ -7,14 +9,37 @@ class Transaction:
         self.amount = amount
         self.signature = signature
     
-    def sign(self, sender_sk):
-        self.signature = sender_sk.sign(self.__str__().encode('utf-8'))
+    def to_dict(self):
+        return {
+            'sender': self.sender,
+            'receiver': self.receiver,
+            'amount': self.amount,
+            'signature': self.signature.hex() if self.signature else None
+        }
 
-    def verify(self, sender_pk):
-        try:
-            sender_pk.verify(self.signature, self.__str__().encode('utf-8'))
+    def serialize(self):
+        transaction_data = {
+            'sender': self.sender,
+            'receiver': self.receiver,
+            'amount': self.amount
+        }
+        return json.dumps(transaction_data, sort_keys=True).encode()
+
+    def sign(self, private_key):
+        private_key_object = ed25519.Ed25519PrivateKey.from_private_bytes(private_key)
+        self.signature = private_key_object.sign(self.serialize())
+
+    def verify_signature(self):
+        # Genesis transaction
+        if self.sender == "0": 
             return True
-        except InvalidSignature:
+
+        public_key_bytes = self.sender
+        public_key = ed25519.Ed25519PublicKey.from_public_bytes(public_key_bytes)
+        try:
+            public_key.verify(self.signature, self.serialize())
+            return True
+        except Exception:
             return False
 
     def __repr__(self):

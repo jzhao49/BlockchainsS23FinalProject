@@ -1,9 +1,8 @@
-import Transaction
-import Block
+from transaction import Transaction
+from block import Block
 
 class Ledger:
-    def __init__(self, difficulty:4):
-        self.difficulty = difficulty
+    def __init__(self):
         self.blocks = [self.create_genesis_block()]
 
     def create_genesis_block(self):
@@ -13,7 +12,6 @@ class Ledger:
     def add_block(self, txns):
         prev = self.blocks[-1].hash
         new_block = Block(txns, prev)
-        new_block.mine_block(self.difficulty)
         self.blocks.append(new_block)
     
     def validate_chain(self):
